@@ -106,6 +106,5 @@ class UserControllerTest {
         assertThat(body.getLastName()).isEqualTo(userResponse.getLastName());
         assertThat(body.getUserType()).isEqualTo(userResponse.getUserType());
         assertThat(body.getBalance()).isEqualByComparingTo(userResponse.getBalance());
-
     }
 }
