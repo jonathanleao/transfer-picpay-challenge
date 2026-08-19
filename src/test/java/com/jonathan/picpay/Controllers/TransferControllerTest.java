@@ -34,8 +34,8 @@ class TransferControllerTest {
     private TransferServices transferServices;
 
     @Test
-    @DisplayName("Create transfer when successful and return status 201 CREATED")
-    void createTransfer() {
+    @DisplayName("Create transfer when successful and return userResponse and status 201 CREATED")
+    void createTransferAndReturnHttpsStatus201CREATED() {
         User userSend = User.builder()
                 .id(1L)
                 .firstName("Jonathan").lastName("Leão")
