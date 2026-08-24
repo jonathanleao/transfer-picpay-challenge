@@ -1,110 +1,94 @@
 package com.jonathan.picpay.Controllers;
 
-import com.jonathan.picpay.Entity.User;
-import com.jonathan.picpay.Entity.UserType;
+import com.jonathan.picpay.ExceptionHandler.ExceptionsHandler;
+import com.jonathan.picpay.Exceptions.UserAlreadyExistsException;
 import com.jonathan.picpay.Playload.UserRequest;
 import com.jonathan.picpay.Playload.UserResponse;
 import com.jonathan.picpay.Services.UserServices;
+import com.jonathan.picpay.Utils.UserRequestCreator;
+import com.jonathan.picpay.Utils.UserResponseCreator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import tools.jackson.databind.ObjectMapper;
 
-import java.math.BigDecimal;
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(UserController.class)
+@Import(ExceptionsHandler.class)
+@AutoConfigureMockMvc(addFilters = false)
 class UserControllerTest {
 
-    @InjectMocks
-    private UserController userController;
+    @Autowired
+    private MockMvc mockMvc;
 
-    @Mock
-    private  UserServices userServices;
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @MockitoBean
+    private UserServices userServices;
 
     @Test
-    @DisplayName("list all users and return a list of userResponse and http status 200 OK")
-    void returnListOfUSerResponseAndHttpsStatus200() {
-        UserRequest userRequest = UserRequest.builder()
-                .firstName("Jonathan").lastName("Leão")
-                .document("12345678").email("jonathan@gmail.com").userType(UserType.COMMON).balance(BigDecimal.valueOf(100.00))
-                .password("senhaForte123")
-                .build();
-
-        User user = User.builder()
-                .id(1L).firstName(userRequest.getFirstName())
-                .lastName(userRequest.getLastName()).userType(userRequest.getUserType())
-                .email(userRequest.getEmail()).document(userRequest.getDocument())
-                .balance(userRequest.getBalance()).password(userRequest.getPassword())
-                .build();
-
-        UserResponse userResponse = UserResponse.builder()
-                .id(user.getId()).email(user.getEmail()).firstName(user.getFirstName()).lastName(user.getLastName()).userType(user.getUserType())
-                .balance(user.getBalance()).build();
+    @DisplayName("should return a mapped list of userResponse")
+    void shouldReturnMappedUserResponseList() throws Exception {
+        UserResponse userResponse = UserResponseCreator.buildUserResponse();
 
         BDDMockito.when(userServices.listAll()).thenReturn(List.of(userResponse));
 
-        ResponseEntity<List<UserResponse>> response = userController.listAll();
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-
-        List<UserResponse> body = response.getBody();
-
-        assertThat(body).isNotNull();
-        assertThat(body).hasSize(1);
-
-        UserResponse returned = body.getFirst();
-        assertThat(returned.getId()).isEqualTo(userResponse.getId());
-        assertThat(returned.getEmail()).isEqualTo(userResponse.getEmail());
-        assertThat(returned.getFirstName()).isEqualTo(userResponse.getFirstName());
-        assertThat(returned.getLastName()).isEqualTo(userResponse.getLastName());
-        assertThat(returned.getUserType()).isEqualTo(userResponse.getUserType());
-        assertThat(returned.getBalance()).isEqualByComparingTo(userResponse.getBalance());
-
-
+        mockMvc.perform(get("/users"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].firstName").value(userResponse.getFirstName()))
+                .andExpect(jsonPath("$[0].email").value(userResponse.getEmail()))
+                .andExpect(jsonPath("$[0].id").value(userResponse.getId()))
+                .andExpect(jsonPath("$[0].userType").value(userResponse.getUserType().toString()))
+                .andExpect(jsonPath("$[0].balance").value(userResponse.getBalance()));
     }
 
     @Test
-    @DisplayName("create user and return userResponse and http status 201 CREATED")
-    void createUserAndReturnUserResponseAndHttpStatus201() {
-        UserRequest userRequest = UserRequest.builder()
-                .firstName("Jonathan").lastName("Leão")
-                .document("12345678").email("jonathan@gmail.com").userType(UserType.COMMON).balance(BigDecimal.valueOf(100.00))
-                .password("senhaForte123")
-                .build();
-
-        User user = User.builder()
-                .id(1L).firstName(userRequest.getFirstName())
-                .lastName(userRequest.getLastName()).userType(userRequest.getUserType())
-                .email(userRequest.getEmail()).document(userRequest.getDocument())
-                .balance(userRequest.getBalance()).password(userRequest.getPassword())
-                .build();
-
-        UserResponse userResponse = UserResponse.builder()
-                .id(user.getId()).email(user.getEmail()).firstName(user.getFirstName()).lastName(user.getLastName()).userType(user.getUserType())
-                .balance(user.getBalance()).build();
+    @DisplayName("Should create a user and return a user response ")
+    void shouldCreateUserAndReturnAUserResponse() throws Exception {
+        UserRequest userRequest = UserRequestCreator.buildUserRequest();
+        UserResponse userResponse = UserResponseCreator.buildUserResponse();
 
         BDDMockito.when(userServices.create(userRequest)).thenReturn(userResponse);
 
-        ResponseEntity<UserResponse> response = userController.create(userRequest);
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(userRequest)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(userResponse.getId()))
+                .andExpect(jsonPath("$.firstName").value(userResponse.getFirstName()))
+                .andExpect(jsonPath("$.lastName").value(userResponse.getLastName()))
+                .andExpect(jsonPath("$.email").value(userResponse.getEmail()))
+                .andExpect(jsonPath("$.userType").value(userResponse.getUserType().toString()))
+                .andExpect(jsonPath("$.balance").value(userResponse.getBalance().doubleValue()));
+    }
+    @Test
+    @DisplayName("Should return 409 Conflict when user already exists")
+    void shouldReturn409WhenUserAlreadyExists() throws Exception {
+        UserRequest userRequest = UserRequestCreator.buildUserRequest();
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        BDDMockito.when(userServices.create(userRequest))
+                .thenThrow(new UserAlreadyExistsException("user with this data already exists"));
 
-        UserResponse body = response.getBody();
-        assertThat(body).isNotNull();
-        assertThat(body.getId()).isEqualTo(userResponse.getId());
-        assertThat(body.getEmail()).isEqualTo(userResponse.getEmail());
-        assertThat(body.getFirstName()).isEqualTo(userResponse.getFirstName());
-        assertThat(body.getLastName()).isEqualTo(userResponse.getLastName());
-        assertThat(body.getUserType()).isEqualTo(userResponse.getUserType());
-        assertThat(body.getBalance()).isEqualByComparingTo(userResponse.getBalance());
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(userRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("user with this data already exists"));
     }
 }
