@@ -1,6 +1,5 @@
 package com.jonathan.picpay.Playload;
 
-import com.jonathan.picpay.Entity.User;
 import lombok.Builder;
 import lombok.Data;
 
