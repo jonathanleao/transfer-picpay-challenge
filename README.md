@@ -195,7 +195,61 @@ cp src/main/resources/application-example.yaml src/main/resources/application.ya
 
 Certifique-se de que o MySQL esteja ativo — o banco `PicPayChallenge` é criado automaticamente (`createDatabaseIfNotExist=true`).
 
-## Como rodar a aplicação
+### execução com Docker Compose
+
+O projeto inclui `Dockerfile`, `compose.yaml` e um profile dedicado (`application-docker.yaml`) para execução containerizada.
+
+#### 1) Gerar o jar da aplicação
+
+O `Dockerfile` copia o artefato já compilado (`target/*.jar`), então é necessário empacotar antes de subir os containers:
+
+```bash
+mvn clean package -DskipTests
+```
+
+#### 2) Configurar variáveis de ambiente
+
+Copie o `.env.example` para `.env` e preencha com suas credenciais:
+
+```bash
+cp .env.example .env
+```
+
+Conteúdo esperado:
+
+```env
+DB_USERNAME=seu_usuario
+DB_PASSWORD=sua_senha
+```
+
+#### 3) Subir a stack
+
+```bash
+docker compose up --build
+```
+
+Esse comando provisiona:
+
+- a API Spring Boot em `http://localhost:8080`, usando o profile `docker`;
+- um container MySQL 8.4 (`pic-pay-challenge-mysql`), com healthcheck configurado para garantir que o banco esteja pronto antes da API subir;
+- a base de dados `picpayChallenge`, criada automaticamente via `MYSQL_DATABASE`;
+- um volume nomeado (`mysql-data`) para persistir os dados do banco entre reinicializações.
+
+A aplicação só inicia depois que o MySQL responde ao healthcheck (`depends_on` com `condition: service_healthy`), evitando erros de conexão na subida.
+
+#### 4) Parar os containers
+
+```bash
+docker compose down
+```
+
+Para remover também o volume do banco:
+
+```bash
+docker compose down -v
+```
+
+## Como rodar a aplicação local
 
 ### Pré-requisitos
 
