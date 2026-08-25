@@ -3,7 +3,7 @@ spring:
     name: picPayChallenge
 
   datasource:
-    url: jdbc:mysql://host.docker.internal:3306/tech_events?createDatabaseIfNotExist=true
+    url: jdbc:mysql://host.docker.internal:3306/picPayChallenge?createDatabaseIfNotExist=true
     username: yourUser
     password: yourPassword
     driver-class-name: com.mysql.cj.jdbc.Driver
