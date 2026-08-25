@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: picPayChallenge
+
+  datasource:
+    url: jdbc:mysql://host.docker.internal:3306/tech_events?createDatabaseIfNotExist=true
+    username: yourUser
+    password: yourPassword
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true

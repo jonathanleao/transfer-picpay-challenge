@@ -1,0 +1,31 @@
+services:
+  app:
+    build: .
+    container_name: pic-pay-challenge-api
+    ports:
+      - "8080:8080"
+    depends_on:
+       mysql:
+         condition: "service_healthy"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/picpayChallenge
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      SPRING_PROFILES_ACTIVE: docker
+
+  mysql:
+    image: mysql:8.4
+    container_name: pic-pay-challenge-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: picpayChallenge
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  mysql-data:
